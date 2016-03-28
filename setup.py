@@ -27,7 +27,7 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 PROJECT = 'wishbone_input_amqp'
-VERSION = '0.1.0'
+VERSION = '1.0.0'
 
 install_requires = [
     'wishbone>=2.1.1',
@@ -57,7 +57,7 @@ setup(
     name=PROJECT,
     version=VERSION,
 
-    description='A Wishbone input module to consumes messages from AMQP.',
+    description='A Wishbone input module to consume messages from AMQP.',
     long_description=long_description,
 
     author='Jelle Smet',
