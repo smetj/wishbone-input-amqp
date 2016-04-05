@@ -1,3 +1,5 @@
+::
+
               __       __    __
     .--.--.--|__.-----|  |--|  |--.-----.-----.-----.
     |  |  |  |  |__ --|     |  _  |  _  |     |  -__|
@@ -11,7 +13,7 @@
     wishbone.input.amqp
     ===================
 
-    Version: 0.1.0
+    Version: 1.0.0
 
     Consumes messages from AMQP.
     ----------------------------
@@ -96,4 +98,3 @@
 
             - cancel
                |  Cancels a message acknowledgement (requires the delivery_tag)
-
