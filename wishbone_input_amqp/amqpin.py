@@ -151,6 +151,7 @@ class AMQPIn(Actor):
                                     userid=self.kwargs.user,
                                     password=self.kwargs.password
                                     )
+                self.connection.connect()
                 self.channel = self.connection.channel()
 
                 if self.kwargs.exchange != "":
@@ -206,12 +207,15 @@ class AMQPIn(Actor):
     def handleAcknowledgements(self):
         while self.loop():
             event = self.pool.queue.ack.get()
-            try:
-                self.channel.basic_ack(event.get("@tmp.%s.delivery_tag" % (self.name)))
-            except Exception as err:
-                self.pool.queue.ack.rescue(event)
-                self.logging.error("Failed to acknowledge message.  Reason: %s." % (err))
-                sleep(0.5)
+            if event.has("@tmp.%s.delivery_tag" % (self.name)):
+                try:
+                    self.channel.basic_ack(event.get("@tmp.%s.delivery_tag" % (self.name)))
+                except Exception as err:
+                    self.pool.queue.ack.rescue(event)
+                    self.logging.error("Failed to acknowledge message.  Reason: %s." % (err))
+                    sleep(0.5)
+            else:
+                self.logging.debug("Cannot acknowledge message because '@tmp.%s.delivery_tag' is missing." % (self.name))
 
     def handleAcknowledgementsCancel(self):
         while self.loop():
