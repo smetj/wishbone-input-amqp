@@ -22,4 +22,4 @@
 #
 #
 
-from amqpin import AMQPIn
+from .amqpin import AMQPIn
