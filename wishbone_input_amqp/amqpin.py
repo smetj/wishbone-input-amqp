@@ -22,14 +22,15 @@
 #
 #
 
-from gevent import monkey;monkey.patch_all()
-from wishbone import Actor
+from gevent import monkey
+monkey.patch_all()
+from wishbone.module import InputModule
 from amqp.connection import Connection as amqp_connection
 from gevent import sleep
 from wishbone.event import Event
 
 
-class AMQPIn(Actor):
+class AMQPIn(InputModule):
 
     '''**Consumes messages from AMQP.**
 
@@ -120,7 +121,7 @@ class AMQPIn(Actor):
                  queue="wishbone", queue_durable=False, queue_exclusive=False, queue_auto_delete=True, queue_declare=True,
                  queue_arguments={},
                  routing_key="", prefetch_count=1, no_ack=False):
-        Actor.__init__(self, actor_config)
+        InputModule.__init__(self, actor_config)
 
         self.pool.createQueue("outbox")
         self.pool.createQueue("ack")
@@ -136,21 +137,23 @@ class AMQPIn(Actor):
         self.sendToBackground(self.handleAcknowledgementsCancel)
 
     def consume(self, message):
-        event = Event(str(message.body))
-        event.set(message.delivery_info["delivery_tag"], "@tmp.%s.delivery_tag" % (self.name))
-        self.submit(event, self.pool.queue.outbox)
+
+        for item in self.decode(message.body):
+            event = Event(str(message.body))
+            event.set(message.delivery_info["delivery_tag"], "@tmp.%s.delivery_tag" % (self.name))
+            self.submit(event, self.pool.queue.outbox)
 
     def setupConnectivity(self):
 
         while self.loop():
             try:
                 self.connection = amqp_connection(
-                                    host=self.kwargs.host,
-                                    port=self.kwargs.port,
-                                    virtual_host=self.kwargs.vhost,
-                                    userid=self.kwargs.user,
-                                    password=self.kwargs.password
-                                    )
+                    host=self.kwargs.host,
+                    port=self.kwargs.port,
+                    virtual_host=self.kwargs.vhost,
+                    userid=self.kwargs.user,
+                    password=self.kwargs.password
+                )
                 self.connection.connect()
                 self.channel = self.connection.channel()
 
@@ -198,7 +201,6 @@ class AMQPIn(Actor):
         while self.loop():
             try:
                 self.connection.drain_events()
-                sleep(0)
             except Exception as err:
                 self.logging.error("Problem connecting to broker.  Reason: %s" % (err))
                 self.setupConnectivity()
@@ -213,7 +215,7 @@ class AMQPIn(Actor):
                 except Exception as err:
                     self.pool.queue.ack.rescue(event)
                     self.logging.error("Failed to acknowledge message.  Reason: %s." % (err))
-                    sleep(0.5)
+                    sleep(1)
             else:
                 self.logging.debug("Cannot acknowledge message because '@tmp.%s.delivery_tag' is missing." % (self.name))
 
@@ -225,10 +227,10 @@ class AMQPIn(Actor):
             except Exception as err:
                 self.pool.queue.ack.rescue(event)
                 self.logging.error("Failed to cancel acknowledge message.  Reason: %s." % (err))
-                sleep(0.5)
+                sleep(1)
 
     def postHook(self):
         try:
             self.connection.close()
-        except:
-            pass
+        except Exception as err:
+            del(err)
