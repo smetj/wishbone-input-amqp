@@ -28,6 +28,7 @@ from wishbone.module import InputModule
 from amqp.connection import Connection as amqp_connection
 from gevent import sleep
 from wishbone.event import Event
+from wishbone.protocol.decode.plain import Plain
 
 
 class AMQPIn(InputModule):
@@ -128,6 +129,7 @@ class AMQPIn(InputModule):
         self.pool.createQueue("cancel")
         self.pool.queue.ack.disableFallThrough()
         self.connection = None
+        self.decode = Plain(delimiter=None).handler
 
     def preHook(self):
         self._queue_arguments = dict(self.kwargs.queue_arguments)
@@ -138,10 +140,12 @@ class AMQPIn(InputModule):
 
     def consume(self, message):
 
-        for item in self.decode(message.body):
-            event = Event(str(message.body))
-            event.set(message.delivery_info["delivery_tag"], "@tmp.%s.delivery_tag" % (self.name))
-            self.submit(event, self.pool.queue.outbox)
+        for chunk in [message.body, None]:
+            for item in self.decode(chunk):
+                event = Event(item)
+                event.set({}, "tmp.%s" % (self.name))
+                event.set(message.delivery_info["delivery_tag"], "tmp.%s.delivery_tag" % (self.name))
+                self.submit(event, "outbox")
 
     def setupConnectivity(self):
 
@@ -209,21 +213,21 @@ class AMQPIn(InputModule):
     def handleAcknowledgements(self):
         while self.loop():
             event = self.pool.queue.ack.get()
-            if event.has("@tmp.%s.delivery_tag" % (self.name)):
+            if event.has("tmp.%s.delivery_tag" % (self.name)):
                 try:
-                    self.channel.basic_ack(event.get("@tmp.%s.delivery_tag" % (self.name)))
+                    self.channel.basic_ack(event.get("tmp.%s.delivery_tag" % (self.name)))
                 except Exception as err:
                     self.pool.queue.ack.rescue(event)
                     self.logging.error("Failed to acknowledge message.  Reason: %s." % (err))
                     sleep(1)
             else:
-                self.logging.debug("Cannot acknowledge message because '@tmp.%s.delivery_tag' is missing." % (self.name))
+                self.logging.debug("Cannot acknowledge message because 'tmp.%s.delivery_tag' is missing." % (self.name))
 
     def handleAcknowledgementsCancel(self):
         while self.loop():
             event = self.pool.queue.cancel.get()
             try:
-                self.channel.basic_reject(event.get("@tmp.%s.delivery_tag" % (self.name)), True)
+                self.channel.basic_reject(event.get("tmp.%s.delivery_tag" % (self.name)), True)
             except Exception as err:
                 self.pool.queue.ack.rescue(event)
                 self.logging.error("Failed to cancel acknowledge message.  Reason: %s." % (err))
@@ -231,6 +235,6 @@ class AMQPIn(InputModule):
 
     def postHook(self):
         try:
-            self.connection.close()
+            self.channel.close()
         except Exception as err:
             del(err)
