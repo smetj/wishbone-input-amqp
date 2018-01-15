@@ -28,8 +28,6 @@ from wishbone.actor import ActorConfig
 from wishbone.utils.test import getter
 from wishbone.event import Event
 
-from wishbone_input_httpserver import HTTPServer
-
 from wishbone_input_amqp import AMQPIn
 from amqp.connection import Connection
 from amqp.exceptions import NotFound
