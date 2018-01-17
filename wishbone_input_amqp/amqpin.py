@@ -139,8 +139,7 @@ class AMQPIn(InputModule):
         self.sendToBackground(self.handleAcknowledgementsCancel)
 
     def consume(self, message):
-
-        for chunk in [message.body, None]:
+        for chunk in [message.body, ""]:
             for item in self.decode(chunk):
                 event = Event(item)
                 event.set({}, "tmp.%s" % (self.name))
@@ -236,5 +235,10 @@ class AMQPIn(InputModule):
     def postHook(self):
         try:
             self.channel.close()
+        except Exception as err:
+            del(err)
+
+        try:
+            self.connection.close()
         except Exception as err:
             del(err)
