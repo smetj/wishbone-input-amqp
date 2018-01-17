@@ -32,28 +32,67 @@ from wishbone_input_amqp import AMQPIn
 from amqp.connection import Connection
 from amqp.exceptions import NotFound
 from gevent import sleep
+import requests
+from requests.auth import HTTPBasicAuth
+from amqp import Connection, basic_message
 
 
-class AMQPConnection(object):
+def test_module_amqp_create_exchange_default():
 
-    def __init__(self):
-        self.connection = Connection(
-            host="localhost",
-            port=5672,
-            virtual_host="/",
-            userid="guest",
-            password="guest"
-        )
-        self.connection.connect()
-        self.channel = self.connection.channel()
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, exchange="new_exchange_direct")
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
 
-    def __enter__(self, *args, **kwargs):
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/exchanges/%2f/new_exchange_direct", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["name"] == "new_exchange_direct"
 
-        return self.channel
+    amqp.stop()
 
-    def __exit__(self, *args, **kwargs):
-        self.channel.close()
-        self.connection.close()
+
+def test_module_amqp_create_exchange_type():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, exchange="new_exchange_fanout", exchange_type="fanout")
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/exchanges/%2f/new_exchange_fanout", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["type"] == "fanout"
+
+    amqp.stop()
+
+
+def test_module_amqp_create_exchange_durable():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, exchange="new_exchange_direct_1", exchange_durable=True)
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/exchanges/%2f/new_exchange_direct_1", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["durable"] is True
+    amqp.stop()
+
+
+def test_module_amqp_create_exchange_auto_delete():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, exchange="new_exchange_direct_2", exchange_auto_delete=False)
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/exchanges/%2f/new_exchange_direct_2", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["auto_delete"] is False
+    amqp.stop()
 
 
 def test_module_amqp_default_queue():
@@ -64,15 +103,10 @@ def test_module_amqp_default_queue():
     amqp.pool.createQueue("outbox")
     amqp.pool.queue.outbox.disableFallThrough()
     amqp.start()
-    sleep(1)
 
-    with AMQPConnection() as amqp_test:
-        try:
-            amqp_test.queue_declare("wishbone", passive=True)
-        except NotFound:
-            assert False, "Queue wishbone does not exist"
-        else:
-            assert True
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/queues/%2f/wishbone", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["name"] == "wishbone"
 
     amqp.stop()
 
@@ -85,18 +119,81 @@ def test_module_amqp_default_queue_binding():
     amqp.pool.createQueue("outbox")
     amqp.pool.queue.outbox.disableFallThrough()
     amqp.start()
+
     sleep(1)
+    response = requests.get("http://localhost:15672/api/bindings/%2f/", auth=HTTPBasicAuth("guest", "guest"))
 
-    with AMQPConnection() as amqp_test:
-        try:
-            amqp_test.queue_unbind(
-                "wishbone",
-                "wishbone",
-                routing_key="wishbone",
-            )
-        except NotFound:
-            assert False, "Queue wishbone is not bound"
-        else:
-            assert True
+    ok = False
+    for binding in response.json():
+        if binding["source"] == "wishbone" and binding["destination"] == "wishbone":
+            ok = True
 
+    assert ok is True
     amqp.stop()
+
+
+def test_module_amqp_default_queue_durable():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, queue_durable=True)
+
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/queues/%2f/wishbone", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["durable"] is True
+    amqp.stop()
+
+
+def test_module_amqp_default_queue_exclusive():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, queue_exclusive=True)
+
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/queues/%2f/wishbone", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["exclusive"] is True
+    amqp.stop()
+
+
+def test_module_amqp_default_queue_auto_delete():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, queue_auto_delete=True)
+
+    amqp.pool.createQueue("outbox")
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    response = requests.get("http://localhost:15672/api/queues/%2f/wishbone", auth=HTTPBasicAuth("guest", "guest"))
+    assert response.json()["auto_delete"] is True
+    amqp.stop()
+
+
+def test_module_amqp_submit_message():
+
+    actor_config = ActorConfig('amqp', 100, 1, {}, "", disable_exception_handling=True)
+    amqp = AMQPIn(actor_config, exchange="wishbone")
+
+    amqp.pool.queue.outbox.disableFallThrough()
+    amqp.start()
+
+    sleep(1)
+    conn = Connection()
+    conn.connect()
+    channel = conn.channel()
+    channel.basic_publish(basic_message.Message("test"), exchange="wishbone")
+    channel.close()
+    conn.close()
+
+    event = getter(amqp.pool.queue.outbox)
+    assert event.get() == "test"
+    amqp.stop()
+
