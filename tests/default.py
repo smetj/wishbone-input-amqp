@@ -192,7 +192,7 @@ def test_module_amqp_submit_message():
     channel.basic_publish(basic_message.Message("test"), exchange="wishbone")
     channel.close()
     conn.close()
-
+    sleep(1)
     event = getter(amqp.pool.queue.outbox)
     assert event.get() == "test"
     amqp.stop()
