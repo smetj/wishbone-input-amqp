@@ -1,0 +1,24 @@
+language: python
+
+python:
+  - "3.6"
+
+before_install:
+  - docker pull rabbitmq
+  - docker run -d --hostname test-rabbit --name test-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+install:
+  - python setup.py install
+  - pip install pytest
+
+script:
+  - pytest -s -v tests/default.py
+
+after_success:
+  - docker login -e $DOCKER_EMAIL -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  - export REPO=smetj/wishbone
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+  - docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT .
+  - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
+  - docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+  - docker push $REPO

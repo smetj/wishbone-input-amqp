@@ -1,23 +1,20 @@
 ::
-
               __       __    __
     .--.--.--|__.-----|  |--|  |--.-----.-----.-----.
     |  |  |  |  |__ --|     |  _  |  _  |     |  -__|
     |________|__|_____|__|__|_____|_____|__|__|_____|
-                                       version 2.1.2
-
-    Build composable event pipeline servers with minimal effort.
+                                       version 3.0.0
 
 
-    ===================
-    wishbone.input.amqp
-    ===================
+    ==================================
+    wishbone_contrib.module.input.amqp
+    ==================================
 
-    Version: 1.0.0
+    Version: 3.0.0
 
     Consumes messages from AMQP.
     ----------------------------
-
+    **Consumes messages from AMQP.**
 
         Consumes messages from an AMQP message broker.
         The declared <exchange> and <queue> will be bound to each other.
@@ -98,3 +95,4 @@
 
             - cancel
                |  Cancels a message acknowledgement (requires the delivery_tag)
+
