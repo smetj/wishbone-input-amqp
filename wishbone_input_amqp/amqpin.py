@@ -55,6 +55,9 @@ class AMQPIn(InputModule):
         - password(str)("guest")
            |  The password to authenticate.
 
+        - ssl(bool)(False)
+           |  If True expects SSL
+
         - exchange(str)("")
            |  The exchange to declare.
 
@@ -116,7 +119,7 @@ class AMQPIn(InputModule):
            |  Cancels a message acknowledgement (requires the delivery_tag)
     '''
 
-    def __init__(self, actor_config, host="localhost", port=5672, vhost="/", user="guest", password="guest",
+    def __init__(self, actor_config, host="localhost", port=5672, vhost="/", user="guest", password="guest", ssl=False,
                  exchange="", exchange_type="direct", exchange_durable=False, exchange_auto_delete=True, exchange_passive=False,
                  exchange_arguments={},
                  queue="wishbone", queue_durable=False, queue_exclusive=False, queue_auto_delete=True, queue_declare=True,
@@ -155,7 +158,8 @@ class AMQPIn(InputModule):
                     port=self.kwargs.port,
                     virtual_host=self.kwargs.vhost,
                     userid=self.kwargs.user,
-                    password=self.kwargs.password
+                    password=self.kwargs.password,
+                    ssl=self.kwargs.ssl
                 )
                 self.connection.connect()
                 self.channel = self.connection.channel()
