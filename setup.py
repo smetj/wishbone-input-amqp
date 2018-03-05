@@ -30,7 +30,7 @@ PROJECT = 'wishbone_input_amqp'
 VERSION = '3.0.0'
 
 install_requires = [
-    'wishbone>=3.0.0',
+    'wishbone>=3.0.4',
     'amqp',
 ]
 
