@@ -1,101 +1,108 @@
 ::
-              __       __    __
-    .--.--.--|__.-----|  |--|  |--.-----.-----.-----.
-    |  |  |  |  |__ --|     |  _  |  _  |     |  -__|
-    |________|__|_____|__|__|_____|_____|__|__|_____|
-                                       version 3.0.0
+
+            __       __    __
+  .--.--.--|__.-----|  |--|  |--.-----.-----.-----.
+  |  |  |  |  |__ --|     |  _  |  _  |     |  -__|
+  |________|__|_____|__|__|_____|_____|__|__|_____|
 
 
-    ==================================
-    wishbone_contrib.module.input.amqp
-    ==================================
+  ==================================
+  wishbone_contrib.module.input.amqp
+  ==================================
 
-    Version: 3.0.0
+  Version: 3.0.1
 
-    Consumes messages from AMQP.
-    ----------------------------
-    **Consumes messages from AMQP.**
+  Consumes messages from AMQP.
+  ----------------------------
+  **Consumes messages from AMQP.**
 
-        Consumes messages from an AMQP message broker.
-        The declared <exchange> and <queue> will be bound to each other.
+      Consumes messages from an AMQP message broker.
+      The declared <exchange> and <queue> will be bound to each other.
 
-        Parameters:
+      Parameters:
 
-            - host(str)("localhost")
-               | The host to connect to.
+          - exchange(str)("")
+             |  The exchange to declare.
 
-            - port(int)(5672)
-               | The port to connect to.
+          - exchange_arguments(dict)({})
+             |  Additional arguments for exchange declaration.
 
-            - vhost(str)("/")
-               |  The virtual host to connect to.
+          - exchange_auto_delete(bool)(true)
+             |  If set, the exchange is deleted when all queues have finished using it.
 
-            - user(str)("guest")
-               |  The username to authenticate.
+          - exchange_durable(bool)(false)
+             |  Declare a durable exchange.
 
-            - password(str)("guest")
-               |  The password to authenticate.
+          - exchange_passive(bool)(false)
+             |  If set, the server will not create the exchange. The client can use
+             |  this to check whether an exchange exists without modifying the server state.
 
-            - ssl(bool)(False)
-               |  If True expects SSL
+          - exchange_type(str)("direct")
+             |  The exchange type to create. (direct, topic, fanout)
 
-            - exchange(str)("")
-               |  The exchange to declare.
+          - host(str)("localhost")
+             | The host to connect to.
 
-            - exchange_type(str)("direct")
-               |  The exchange type to create. (direct, topic, fanout)
+          - interval(float)(1)
+             |  The interval in seconds between each generated event.
+             |  A value of 0 means as fast as possible.
 
-            - exchange_durable(bool)(false)
-               |  Declare a durable exchange.
+          - native_event(bool)(False)
+             |  Whether to expect incoming events to be native Wishbone events
 
-            - exchange_auto_delete(bool)(true)
-               |  If set, the exchange is deleted when all queues have finished using it.
+          - no_ack(bool)(false)
+             |  Override acknowledgement requirement.
 
-            - exchange_passive(bool)(false)
-               |  If set, the server will not create the exchange. The client can use
-               |  this to check whether an exchange exists without modifying the server state.
+          - password(str)("guest")
+             |  The password to authenticate.
 
-            - exchange_arguments(dict)({})
-               |  Additional arguments for exchange declaration.
+          - port(int)(5672)
+             | The port to connect to.
 
-            - queue(str)("wishbone")
-               |  The queue to declare and ultimately consume.
+          - prefetch_count(int)(1)
+             |  Prefetch count value to consume messages from queue.
 
-            - queue_durable(bool)(false)
-               |  Declare a durable queue.
+          - queue(str)("wishbone")
+             |  The queue to declare and ultimately consume.
 
-            - queue_exclusive(bool)(false)
-               |  Declare an exclusive queue.
+          - queue_arguments(dict)({})
+             |  Additional arguments for queue declaration.
 
-            - queue_auto_delete(bool)(true)
-               |  Whether to autodelete the queue.
+          - queue_auto_delete(bool)(true)
+             |  Whether to autodelete the queue.
 
-            - queue_declare(bool)(true)
-               |  Whether to actually declare the queue.
+          - queue_declare(bool)(true)
+             |  Whether to actually declare the queue.
 
-            - queue_arguments(dict)({})
-               |  Additional arguments for queue declaration.
+          - queue_durable(bool)(false)
+             |  Declare a durable queue.
 
-            - routing_key(str)("")
-               |  The routing key to use in case of a "topic" exchange.
-               | When the exchange is type "direct" the routing key is always equal
-               | to the <queue> value.
+          - queue_exclusive(bool)(false)
+             |  Declare an exclusive queue.
 
-            - prefetch_count(int)(1)
-               |  Prefetch count value to consume messages from queue.
+          - routing_key(str)("")
+             |  The routing key to use in case of a "topic" exchange.
+             | When the exchange is type "direct" the routing key is always equal
+             | to the <queue> value.
 
-            - no_ack(bool)(false)
-               |  Override acknowledgement requirement.
+          - ssl(bool)(False)
+             |  If True expects SSL
+
+          - user(str)("guest")
+             |  The username to authenticate.
+
+          - vhost(str)("/")
+             |  The virtual host to connect to.
 
 
-        Queues:
+      Queues:
 
-            - outbox
-               |  Messages coming from the defined broker.
+          - outbox
+             |  Messages coming from the defined broker.
 
-            - ack
-               |  Messages to acknowledge (requires the delivery_tag)
+          - ack
+             |  Messages to acknowledge (requires the delivery_tag)
 
-            - cancel
-               |  Cancels a message acknowledgement (requires the delivery_tag)
+          - cancel
+             |  Cancels a message acknowledgement (requires the delivery_tag)
 
