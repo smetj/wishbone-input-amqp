@@ -27,8 +27,6 @@ monkey.patch_all()
 from wishbone.module import InputModule
 from amqp.connection import Connection as amqp_connection
 from gevent import sleep
-from wishbone.event import Event
-from wishbone.protocol.decode.plain import Plain
 
 
 class AMQPIn(InputModule):
@@ -40,48 +38,52 @@ class AMQPIn(InputModule):
 
     Parameters:
 
-        - host(str)("localhost")
-           | The host to connect to.
-
-        - port(int)(5672)
-           | The port to connect to.
-
-        - vhost(str)("/")
-           |  The virtual host to connect to.
-
-        - user(str)("guest")
-           |  The username to authenticate.
-
-        - password(str)("guest")
-           |  The password to authenticate.
-
         - exchange(str)("")
            |  The exchange to declare.
 
-        - exchange_type(str)("direct")
-           |  The exchange type to create. (direct, topic, fanout)
-
-        - exchange_durable(bool)(false)
-           |  Declare a durable exchange.
+        - exchange_arguments(dict)({})
+           |  Additional arguments for exchange declaration.
 
         - exchange_auto_delete(bool)(true)
            |  If set, the exchange is deleted when all queues have finished using it.
+
+        - exchange_durable(bool)(false)
+           |  Declare a durable exchange.
 
         - exchange_passive(bool)(false)
            |  If set, the server will not create the exchange. The client can use
            |  this to check whether an exchange exists without modifying the server state.
 
-        - exchange_arguments(dict)({})
-           |  Additional arguments for exchange declaration.
+        - exchange_type(str)("direct")
+           |  The exchange type to create. (direct, topic, fanout)
+
+        - host(str)("localhost")
+           | The host to connect to.
+
+        - interval(float)(1)
+           |  The interval in seconds between each generated event.
+           |  A value of 0 means as fast as possible.
+
+        - native_event(bool)(False)
+           |  Whether to expect incoming events to be native Wishbone events
+
+        - no_ack(bool)(false)
+           |  Override acknowledgement requirement.
+
+        - password(str)("guest")
+           |  The password to authenticate.
+
+        - port(int)(5672)
+           | The port to connect to.
+
+        - prefetch_count(int)(1)
+           |  Prefetch count value to consume messages from queue.
 
         - queue(str)("wishbone")
            |  The queue to declare and ultimately consume.
 
-        - queue_durable(bool)(false)
-           |  Declare a durable queue.
-
-        - queue_exclusive(bool)(false)
-           |  Declare an exclusive queue.
+        - queue_arguments(dict)({})
+           |  Additional arguments for queue declaration.
 
         - queue_auto_delete(bool)(true)
            |  Whether to autodelete the queue.
@@ -89,19 +91,25 @@ class AMQPIn(InputModule):
         - queue_declare(bool)(true)
            |  Whether to actually declare the queue.
 
-        - queue_arguments(dict)({})
-           |  Additional arguments for queue declaration.
+        - queue_durable(bool)(false)
+           |  Declare a durable queue.
+
+        - queue_exclusive(bool)(false)
+           |  Declare an exclusive queue.
 
         - routing_key(str)("")
            |  The routing key to use in case of a "topic" exchange.
            | When the exchange is type "direct" the routing key is always equal
            | to the <queue> value.
 
-        - prefetch_count(int)(1)
-           |  Prefetch count value to consume messages from queue.
+        - ssl(bool)(False)
+           |  If True expects SSL
 
-        - no_ack(bool)(false)
-           |  Override acknowledgement requirement.
+        - user(str)("guest")
+           |  The username to authenticate.
+
+        - vhost(str)("/")
+           |  The virtual host to connect to.
 
 
     Queues:
@@ -116,7 +124,8 @@ class AMQPIn(InputModule):
            |  Cancels a message acknowledgement (requires the delivery_tag)
     '''
 
-    def __init__(self, actor_config, host="localhost", port=5672, vhost="/", user="guest", password="guest",
+    def __init__(self, actor_config, native_event=False, destination="data",
+                 host="localhost", port=5672, vhost="/", user="guest", password="guest", ssl=False,
                  exchange="", exchange_type="direct", exchange_durable=False, exchange_auto_delete=True, exchange_passive=False,
                  exchange_arguments={},
                  queue="wishbone", queue_durable=False, queue_exclusive=False, queue_auto_delete=True, queue_declare=True,
@@ -129,7 +138,6 @@ class AMQPIn(InputModule):
         self.pool.createQueue("cancel")
         self.pool.queue.ack.disableFallThrough()
         self.connection = None
-        self.decode = Plain(delimiter=None).handler
 
     def preHook(self):
         self._queue_arguments = dict(self.kwargs.queue_arguments)
@@ -139,9 +147,12 @@ class AMQPIn(InputModule):
         self.sendToBackground(self.handleAcknowledgementsCancel)
 
     def consume(self, message):
-        for chunk in [message.body, ""]:
+        for chunk in [message.body, None]:
             for item in self.decode(chunk):
-                event = Event(item)
+                event = self.generateEvent(
+                    item,
+                    self.kwargs.destination
+                )
                 event.set({}, "tmp.%s" % (self.name))
                 event.set(message.delivery_info["delivery_tag"], "tmp.%s.delivery_tag" % (self.name))
                 self.submit(event, "outbox")
@@ -155,7 +166,8 @@ class AMQPIn(InputModule):
                     port=self.kwargs.port,
                     virtual_host=self.kwargs.vhost,
                     userid=self.kwargs.user,
-                    password=self.kwargs.password
+                    password=self.kwargs.password,
+                    ssl=self.kwargs.ssl
                 )
                 self.connection.connect()
                 self.channel = self.connection.channel()
