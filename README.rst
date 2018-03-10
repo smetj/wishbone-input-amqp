@@ -10,7 +10,7 @@
   wishbone_contrib.module.input.amqp
   ==================================
 
-  Version: 3.0.1
+  Version: 3.0.2
 
   Consumes messages from AMQP.
   ----------------------------
@@ -39,6 +39,10 @@
 
           - exchange_type(str)("direct")
              |  The exchange type to create. (direct, topic, fanout)
+
+          - heartbeat(int)(0)
+              | Enable AMQP heartbeat. The value is the interval in seconds.
+              | 0 disables heartbeat support.
 
           - host(str)("localhost")
              | The host to connect to.
