@@ -57,6 +57,10 @@ class AMQPIn(InputModule):
         - exchange_type(str)("direct")
            |  The exchange type to create. (direct, topic, fanout)
 
+        - heartbeat(int)(0)
+            | Enable AMQP heartbeat. The value is the interval in seconds.
+            | 0 disables heartbeat support.
+
         - host(str)("localhost")
            | The host to connect to.
 
@@ -125,7 +129,7 @@ class AMQPIn(InputModule):
     '''
 
     def __init__(self, actor_config, native_event=False, destination="data",
-                 host="localhost", port=5672, vhost="/", user="guest", password="guest", ssl=False,
+                 host="localhost", port=5672, vhost="/", user="guest", password="guest", ssl=False, heartbeat=0,
                  exchange="", exchange_type="direct", exchange_durable=False, exchange_auto_delete=True, exchange_passive=False,
                  exchange_arguments={},
                  queue="wishbone", queue_durable=False, queue_exclusive=False, queue_auto_delete=True, queue_declare=True,
@@ -138,6 +142,7 @@ class AMQPIn(InputModule):
         self.pool.createQueue("cancel")
         self.pool.queue.ack.disableFallThrough()
         self.connection = None
+        self.connected = False
 
     def preHook(self):
         self._queue_arguments = dict(self.kwargs.queue_arguments)
@@ -145,6 +150,9 @@ class AMQPIn(InputModule):
         self.sendToBackground(self.drain)
         self.sendToBackground(self.handleAcknowledgements)
         self.sendToBackground(self.handleAcknowledgementsCancel)
+        if self.kwargs.heartbeat > 0:
+            self.logging.info("Sending heartbeat every %s seconds." % (self.kwargs.heartbeat))
+            self.sendToBackground(self.heartbeat)
 
     def consume(self, message):
         for chunk in [message.body, None]:
@@ -162,6 +170,7 @@ class AMQPIn(InputModule):
         while self.loop():
             try:
                 self.connection = amqp_connection(
+                    heartbeat=self.kwargs.heartbeat,
                     host=self.kwargs.host,
                     port=self.kwargs.port,
                     virtual_host=self.kwargs.vhost,
@@ -208,6 +217,7 @@ class AMQPIn(InputModule):
                 self.logging.error("Failed to connect to broker.  Reason %s " % (err))
                 sleep(1)
             else:
+                self.connected = True
                 break
 
     def drain(self):
@@ -217,9 +227,20 @@ class AMQPIn(InputModule):
             try:
                 self.connection.drain_events()
             except Exception as err:
+                self.connected = False
                 self.logging.error("Problem connecting to broker.  Reason: %s" % (err))
                 self.setupConnectivity()
                 sleep(1)
+
+    def heartbeat(self):
+
+        while self.loop():
+            sleep(self.kwargs.heartbeat)
+            try:
+                if self.connected:
+                    self.connection.send_heartbeat()
+            except Exception as err:
+                self.logging.error("Failed to send heartbeat. Reason: %s" % (err))
 
     def handleAcknowledgements(self):
         while self.loop():
