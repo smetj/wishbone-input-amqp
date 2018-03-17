@@ -27,10 +27,10 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 PROJECT = 'wishbone_input_amqp'
-VERSION = '3.0.2'
+VERSION = '3.0.3'
 
 install_requires = [
-    'wishbone>=3.0.4',
+    'wishbone>=3.1.0',
     'amqp',
 ]
 
