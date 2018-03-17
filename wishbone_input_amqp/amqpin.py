@@ -68,7 +68,7 @@ class AMQPIn(InputModule):
            |  The interval in seconds between each generated event.
            |  A value of 0 means as fast as possible.
 
-        - native_event(bool)(False)
+        - native_events(bool)(False)
            |  Whether to expect incoming events to be native Wishbone events
 
         - no_ack(bool)(false)
@@ -128,7 +128,7 @@ class AMQPIn(InputModule):
            |  Cancels a message acknowledgement (requires the delivery_tag)
     '''
 
-    def __init__(self, actor_config, native_event=False, destination="data",
+    def __init__(self, actor_config, native_events=False, destination="data",
                  host="localhost", port=5672, vhost="/", user="guest", password="guest", ssl=False, heartbeat=0,
                  exchange="", exchange_type="direct", exchange_durable=False, exchange_auto_delete=True, exchange_passive=False,
                  exchange_arguments={},
