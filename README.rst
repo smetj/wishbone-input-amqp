@@ -1,5 +1,4 @@
 ::
-
             __       __    __
   .--.--.--|__.-----|  |--|  |--.-----.-----.-----.
   |  |  |  |  |__ --|     |  _  |  _  |     |  -__|
@@ -10,7 +9,8 @@
   wishbone_contrib.module.input.amqp
   ==================================
 
-  Version: 3.0.2
+  Version: 3.0.3
+
 
   Consumes messages from AMQP.
   ----------------------------
@@ -51,7 +51,7 @@
              |  The interval in seconds between each generated event.
              |  A value of 0 means as fast as possible.
 
-          - native_event(bool)(False)
+          - native_events(bool)(False)
              |  Whether to expect incoming events to be native Wishbone events
 
           - no_ack(bool)(false)
