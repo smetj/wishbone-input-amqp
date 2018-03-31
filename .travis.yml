@@ -1,20 +1,21 @@
 language: python
-
 python:
-  - "3.6"
-
+- '3.6'
 before_install:
-  - docker pull rabbitmq
-  - docker run -d --hostname test-rabbit --name test-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-
+- docker pull rabbitmq
+- docker run -d --hostname test-rabbit --name test-rabbit -p 5672:5672 -p 15672:15672
+  rabbitmq:3-management
 install:
-  - python setup.py install
-  - pip install pytest
-
+- python setup.py install
+- pip install pytest
 script:
-  - pytest -s -v tests/default.py
-
+- pytest -s -v tests/default.py
 notifications:
   webhooks:
     urls:
-      - https://$WEBHOOK_USER:$WEBHOOK_PASSWORD@events.smetj.net/travis
+    - secure: hte10FgjISlCqpj1IIdiB3VRRlq3KBAxfDq73HCvJ5RWjxTHWZ081I3RfmZuPi/qVGzZvhSSefaTa0aQbKgv8gJ8H29qWabA4M2IsvMDCuBbJIS9VNhZXywQuRM7CgTh6RcVlinxMsN9BdLIOvj6/cWc77KByEm8FsEeGUibGO4q1bTk2cJihceaxN3uOIfwmnT9QauDLmoj+s3Ou5WAvLDVQoS3vE8wg16R7k01BXX+JoPi+uWdVH94r5D25QTj42ZI953hsnWkshtEdPQNlVkNMUwe7QE2NqT603onP4iEObe9Huh1/yKS4f4cts7j42INrh2TcAjPAd4nfqI8n5XOXe/077PgujhqhlnMRsBsDBcQPbZliIAenPySegawh9dkdcrvLI/qKH//UDUitw0dLEVs9MILhB5nPOH37tHUgcxyBRKkF4yNct1SDx9Asm+1vRlPLD+nGE7pAbiKm59322adA4VwWA/hd0EN5mk+AGwOYb6NlUnNBW+3zJMQ2eA267OhSbubN8RieQyEUN6JMD0J/l+EzMYL0vtuj4YIunnzJ8lR6ryelICu66xTmJhOqxa/wcwNqQVpO7m24TkYLzfmlcG4p1gjYM+VvdhH2k2h+2ouBRoxGUWkbhWUfHVlHcBzGfT0UI1y8NllR/oMWT60F6mjMsn3ojGAxhY=
+    on_success: always
+    on_failure: always
+    on_start: change
+    on_cancel: always
+    on_error: always
