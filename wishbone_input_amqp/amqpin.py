@@ -155,8 +155,9 @@ class AMQPIn(InputModule):
             self.sendToBackground(self.heartbeat)
 
     def consume(self, message):
+        decoder = self.getDecoder()
         for chunk in [message.body, None]:
-            for item in self.decode(chunk):
+            for item in decoder(chunk):
                 event = self.generateEvent(
                     item,
                     self.kwargs.destination
